@@ -1,40 +1,25 @@
 # syntax=docker/dockerfile:1.7
 
-# Use official Python image as base
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy dependency list first (improves caching)
-COPY requirements.txt .
-
-# Install OS deps, then Python deps with a persistent pip cache
+# Minimal OS deps: certs for HTTPS downloads
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # build deps (keep if you need to compile wheels) \
-    g++ cmake libffi-dev libssl-dev \
-    # TLS + certs \
-    ca-certificates openssl \
-    # network/debug tools \
-    curl netcat-openbsd iputils-ping dnsutils iproute2 procps \
-    # optional niceties \
-    jq traceroute \
-    # basic utilities you already like \
-    wget nano \
+    ca-certificates \
   && rm -rf /var/lib/apt/lists/* \
   && update-ca-certificates \
-  && python -m pip install --upgrade pip
 
+# Install Python deps first for better layer caching
+COPY requirements.txt /app/requirements.txt
 
-# Python deps with pip cache (BuildKit)  ← the --mount must be here
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-cache-dir -r requirements.txt 'huggingface_hub[hf_xet]'
+    python -m pip install --upgrade pip \
+ && pip install --no-cache-dir -r /app/requirements.txt
 
-# NLTK data (network fetch at build time)
-RUN python -m nltk.downloader stopwords
-
-# Copy the rest of the project files
-COPY . .
+# Copy the application code + vocab files into the image
+COPY app /app/app
+COPY data_model_v2 /app/data_model_v2
 
 # Expose FastAPI port
 EXPOSE 10000

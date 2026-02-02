@@ -11,6 +11,7 @@ from sentence_transformers import SentenceTransformer
 from .matcher import item_text, normalise
 from .vocab_loader import load_vocab_from_dir
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,6 +31,9 @@ class ServiceState:
         self.vocab: Dict[str, List[Dict[str, Any]]] = {}
         self.vocab_embeds: Dict[str, Tuple[Tuple[str, ...], np.ndarray]] = {}
         # store ids tuple so we know if cached embeds match current vocab
+
+    def get_vocab_embeds(self, kind: str, items: List[Dict[str, Any]]) -> np.ndarray:
+        return self._ensure_vocab_embeds(kind, items)
 
     def load_all(self) -> None:
         logger.info("Loading SentenceTransformer model=%s", self.model_name)

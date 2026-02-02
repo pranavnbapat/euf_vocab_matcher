@@ -7,7 +7,6 @@ import logging
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 
-import numpy as np
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
@@ -18,6 +17,11 @@ from .state import ServiceState
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+STATE = ServiceState(
+    model_name=settings.MODEL_NAME,
+    vocab_dir=settings.VOCAB_DIR,
+    embed_batch_size=settings.EMBED_BATCH_SIZE,
+)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,14 +31,7 @@ async def lifespan(app: FastAPI):
     STATE.load_all()
     yield
 
-
 app = FastAPI(title="vocab-selector", version="1.0.0", lifespan=lifespan)
-
-STATE = ServiceState(
-    model_name=settings.MODEL_NAME,
-    vocab_dir=settings.VOCAB_DIR,
-    embed_batch_size=settings.EMBED_BATCH_SIZE,
-)
 
 
 class DocIn(BaseModel):
@@ -92,7 +89,7 @@ def select_vocab(req: SelectRequest) -> Dict[str, Any]:
             out["category_scored"] = []
         chosen_cat_id = ""
     else:
-        cat_vecs = STATE._ensure_vocab_embeds("category", cats)
+        cat_vecs = STATE.get_vocab_embeds("category", cats)
         cat_scores = score(doc_vec, cat_vecs)
         ranked = rank(cats, cat_scores)
         chosen_cat_item = ranked[0][0]

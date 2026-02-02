@@ -1,15 +1,17 @@
 services:
-  opensearch_fastapi:
+  vocab_matcher:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/pranavnbapat/opensearch_fastapi:v2
-    container_name: opensearch_fastapi
+    image: ghcr.io/pranavnbapat/vocab_matcher:latest
+    container_name: vocab_matcher
     restart: always
     env_file:
       - .env
     ports:
       - "10000:10000"
-#    volumes:
-#      - ./models_cache:/root/.cache/huggingface/transformers
+    volumes:
+      - hf_cache:/hf
 
+volumes:
+  hf_cache:
